@@ -62,3 +62,21 @@ class SDRController:
         self.sdr_client.set_center_freq(change, self.active_rx_device_set)
         if not self.rx_only:
             self.sdr_client.set_center_freq(change, self.active_tx_device_set)
+
+    def change_channel_volume(self, side, vol):
+        if side == 'rx':
+            self.sdr_client.set_ch_vol(vol, self.active_rx_device_set, self.active_rx_channel)
+        if side == 'tx' and not self.rx_only:
+            self.sdr_client.set_ch_vol(vol, self.active_tx_device_set, self.active_tx_channel)
+
+    def mute_channel(self, side):
+        if side == 'rx':
+            self.midi_client.mute_change(
+                'left',
+                self.sdr_client.set_ch_mute(self.active_rx_device_set, self.active_rx_channel)
+            )
+        if side == 'tx' and not self.rx_only:
+            self.midi_client.mute_change(
+                'right',
+                self.sdr_client.set_ch_mute(self.active_tx_device_set, self.active_tx_channel)
+            )

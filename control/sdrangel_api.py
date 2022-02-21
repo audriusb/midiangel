@@ -21,11 +21,11 @@ class SDRAngelAPI:
         settings = requests.get('{}deviceset/{}/channel/{}/settings'.format(self.url, devset, ch)).json()
         current_freq = settings['{}Settings'.format(settings['channelType'])]['inputFrequencyOffset']
         data = {
-        'channelType': settings['channelType'],
-        'direction': settings['direction'],
-        '{}Settings'.format(settings['channelType']): { 
-            'inputFrequencyOffset': current_freq + step 
-            }
+            'channelType': settings['channelType'],
+            'direction': settings['direction'],
+            '{}Settings'.format(settings['channelType']): { 
+                'inputFrequencyOffset': current_freq + step 
+                }
         }
         result = requests.patch('{}deviceset/{}/channel/{}/settings'.format(self.url, devset, ch), json = data)
 
@@ -34,10 +34,46 @@ class SDRAngelAPI:
         settings_name = {k.lower(): k for k in settings.keys()}['{}Settings'.format(settings['deviceHwType']).lower()]
         current_freq = settings[settings_name]['centerFrequency']
         data = {
-        'deviceHwType': settings['deviceHwType'],
-        'direction': settings['direction'],
-        settings_name: { 
-            'centerFrequency': current_freq + step 
-            }
+            'deviceHwType': settings['deviceHwType'],
+            'direction': settings['direction'],
+            settings_name: { 
+                'centerFrequency': current_freq + step 
+                }
         }
         result = requests.patch('{}deviceset/{}/device/settings'.format(self.url, devset), json = data)
+
+
+    def set_ch_vol(self, vol, devset, ch):
+        settings = requests.get('{}deviceset/{}/channel/{}/settings'.format(self.url, devset, ch)).json()
+        if settings['direction'] == 0:
+            vol_setting_name = 'volume'
+        else:
+            vol_setting_name = 'volumeFactor'
+        data = {
+            'channelType': settings['channelType'],
+            'direction': settings['direction'],
+            '{}Settings'.format(settings['channelType']): { 
+                vol_setting_name: vol 
+                }
+        }
+        result = requests.patch('{}deviceset/{}/channel/{}/settings'.format(self.url, devset, ch), json = data)
+
+    def set_ch_mute(self, devset, ch):
+        settings = requests.get('{}deviceset/{}/channel/{}/settings'.format(self.url, devset, ch)).json()
+        is_mute = settings['{}Settings'.format(settings['channelType'])]['audioMute']
+        if is_mute == 0:
+            next_state = 1
+        else:
+            next_state = 0
+        data = {
+            'channelType': settings['channelType'],
+            'direction': settings['direction'],
+            '{}Settings'.format(settings['channelType']): { 
+                'audioMute': next_state
+                }
+        }
+        result = requests.patch('{}deviceset/{}/channel/{}/settings'.format(self.url, devset, ch), json = data)
+        if next_state == 1:
+            return 'on'
+        else:
+            return 'off'

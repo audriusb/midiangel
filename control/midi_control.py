@@ -67,6 +67,19 @@ class MIDIControl:
         self.client.event_output(NoteOnEvent(note=number, channel=ch, velocity=1), port=self.port)
         self.client.drain_output()
 
+    def mute_change(self, side, state):
+        ch = 0
+        if side == 'right':
+            ch = 1
+
+        if state == 'on':
+            self.client.event_output(NoteOnEvent(note=27, channel=ch, velocity=127), port=self.port)
+            self.client.drain_output()
+        else:
+            self.client.event_output(NoteOnEvent(note=27, channel=ch, velocity=0), port=self.port)
+            self.client.drain_output()
+        
+
     def reset_all(self):
         self.client.event_output(NoteOnEvent(note=1, channel=0, velocity=1), port=self.port)
         self.client.event_output(NoteOnEvent(note=2, channel=0, velocity=1), port=self.port)

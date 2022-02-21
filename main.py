@@ -49,6 +49,16 @@ def parse_event(event):
         sdr_controller.select_channel(rx=event['value'])
     if event['type'] == 'selectTxChan':
         sdr_controller.select_channel(tx=event['value'])
+    if event['type'] == 'changeRxVolume':
+        sdr_controller.change_channel_volume('rx', event['value'])
+    if event['type'] == 'changeTxVolume':
+        sdr_controller.change_channel_volume('tx', event['value'])
+    
+    if event['type'] == 'muteRxChan':
+        sdr_controller.mute_channel('rx')
+    if event['type'] == 'muteTxChan':
+        sdr_controller.mute_channel('tx')
+
 
 
 
