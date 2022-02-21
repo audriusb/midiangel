@@ -1,0 +1,4 @@
+configparser
+alsa_midi
+requests
+simplejson
