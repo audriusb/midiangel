@@ -1,32 +1,53 @@
+from collections import defaultdict
+
 from .midi_control import MIDIControl
 from .sdrangel_api import SDRAngelAPI
 
-sdr_client_type = {
-    'sdrangel': SDRAngelAPI
-}
-
 class SDRController:
     
-    def __init__(self, sdr_type, rx_only, config, midi):
-        self.active_rx_device = 0
-        self.active_tx_device = 0
-        self.rx_only = rx_only
-        self.sdr_client = sdr_client_type[sdr_type](config)
+    def __init__(self, config, midi):
+        self.rx_only = config.getboolean('rx_only')
+        self.sdr_client = SDRAngelAPI(config)
         self.midi_client = midi
         self.select_device_sets()
-        self.select_channel(rx="0")
-        if not rx_only:
-            self.select_channel(tx="0")
+        self.device_states = defaultdict(dict)
+        self.check_device_states()
+        self.select_channel(rx='0')
+        if not self.rx_only:
+            self.select_channel(tx='0')
+
+    # For safety reasons update existing state
+    def check_device_states(self):
+        self.device_states[self.active_rx_device_set] =  self.sdr_client.get_deviceset_state(self.active_rx_device_set)
+        self.device_states[self.active_tx_device_set] =  self.sdr_client.get_deviceset_state(self.active_tx_device_set)
+        if self.device_states[self.active_rx_device_set] == 'on':
+            self.midi_client.play_on('left')
+        elif self.device_states[self.active_rx_device_set] == 'off':
+            self.midi_client.play_dimm('left')
+        if self.device_states[self.active_tx_device_set] == 'on' and not self.rx_only:
+            self.midi_client.play_on('right')
+        elif self.device_states[self.active_tx_device_set] == 'off' and not self.rx_only:
+            self.midi_client.play_dimm('right')
+        if self.rx_only:
+            self.midi_client.play_off('right')
+
+    def change_device_state(self, side):
+        if side == 'rx':
+            if self.device_states[self.active_rx_device_set] == 'off':
+                self.sdr_client.set_deviceset_state(self.active_rx_device_set, 'on')
+            else:
+                self.sdr_client.set_deviceset_state(self.active_rx_device_set, 'off')
+        if side == 'tx' and not self.rx_only:
+            if self.device_states[self.active_tx_device_set] == 'off':
+                self.sdr_client.set_deviceset_state(self.active_tx_device_set, 'on')
+            else:
+                self.sdr_client.set_deviceset_state(self.active_tx_device_set, 'off')
+        self.check_device_states()
 
     def change_channel_freq(self, step):
-        # try:
         self.sdr_client.set_ch_freq(step, self.active_rx_device_set, self.active_rx_channel)
         if not self.rx_only:
             self.sdr_client.set_ch_freq(step, self.active_tx_device_set, self.active_tx_channel)
-        # except Exception as e:
-            # print('Error changing frequency. Could be channel not available on selected device')
-            # print(repr(e))
-            # return
 
     def select_device_sets(self, rx=0, tx=1):
         self.active_rx_device_set = rx

@@ -5,6 +5,20 @@ class SDRAngelAPI:
     def __init__(self, config):
         self.url = '{}://{}:{}/{}'.format(config['scheme'], config['hostname'], config['port'], config['path'])
 
+    def get_deviceset_state(self, devset):
+        state = requests.get('{}deviceset/{}/device/run'.format(self.url, devset)).json()['state']
+        if state == 'running':
+            return 'on'
+        elif state == 'idle':
+            return 'off'
+        return 'fail'
+
+    def set_deviceset_state(self, devset, state):
+        if state == 'on':
+            response = requests.post('{}deviceset/{}/device/run'.format(self.url, devset))
+        elif state == 'off':
+            response = requests.delete('{}deviceset/{}/device/run'.format(self.url, devset))
+
     def check_channel(self, direction, devset, ch):
         try:
             settings = requests.get('{}deviceset/{}/channel/{}/settings'.format(self.url, devset, ch)).json()
@@ -15,7 +29,6 @@ class SDRAngelAPI:
             return False
         except:
             return False
-
 
     def set_ch_freq(self, step, devset, ch):
         settings = requests.get('{}deviceset/{}/channel/{}/settings'.format(self.url, devset, ch)).json()

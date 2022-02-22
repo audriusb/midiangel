@@ -79,6 +79,26 @@ class MIDIControl:
             self.client.event_output(NoteOnEvent(note=27, channel=ch, velocity=0), port=self.port)
             self.client.drain_output()
         
+    def play_on(self, side):
+        if side == 'left':
+            self.client.event_output(NoteOnEvent(note=0, channel=0, velocity=127), port=self.port)
+        if side == 'right':
+            self.client.event_output(NoteOnEvent(note=0, channel=1, velocity=127), port=self.port)
+        self.client.drain_output()
+
+    def play_off(self, side):
+        if side == 'left':
+            self.client.event_output(NoteOnEvent(note=0, channel=0, velocity=0), port=self.port)
+        if side == 'right':
+            self.client.event_output(NoteOnEvent(note=0, channel=1, velocity=0), port=self.port)
+        self.client.drain_output()
+
+    def play_dimm(self, side):
+        if side == 'left':
+            self.client.event_output(NoteOnEvent(note=0, channel=0, velocity=1), port=self.port)
+        if side == 'right':
+            self.client.event_output(NoteOnEvent(note=0, channel=1, velocity=1), port=self.port)
+        self.client.drain_output()
 
     def reset_all(self):
         self.client.event_output(NoteOnEvent(note=1, channel=0, velocity=1), port=self.port)

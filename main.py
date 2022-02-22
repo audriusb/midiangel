@@ -20,9 +20,7 @@ event_api_buff = Queue()
 
 midi = MIDIControl(config['MidiController']['controller_name'])
 sdr_controller = SDRController(
-        config['general']['sdr_type'],
-        config['general'].getboolean('rx_only'),
-        config[config['general']['sdr_type']],
+        config['sdrangel'],
         midi
     )
 
@@ -43,6 +41,10 @@ def parse_buffered_events(events):
         sdr_controller.change_channel_freq(freq)
 
 def parse_event(event):
+    if event['type'] == 'triggerRxDev':
+        sdr_controller.change_device_state('rx')
+    if event['type'] == 'triggerTxDev':
+        sdr_controller.change_device_state('tx')
     if event['type'] == 'changeCenterFreq':
         sdr_controller.change_center_freq(10000, event['value'])
     if event['type'] == 'selectRxChan':

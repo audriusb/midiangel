@@ -75,6 +75,13 @@ def midi_translate(event):
             return {"buffered": False, "type": "muteRxChan"}
         if params == (1, 27, 127):
             return {"buffered": False, "type": "muteTxChan"}
+
+        # Channel play buttons
+        if params == (0, 0, 127):
+            return {"buffered": False, "type": "triggerRxDev"}
+        if params == (1, 0, 127):
+            return {"buffered": False, "type": "triggerTxDev"}
+
         
         
         print('Undefined NoteOnEvent: '+repr(event))
