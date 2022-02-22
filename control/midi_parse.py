@@ -1,4 +1,5 @@
 from alsa_midi.event import ControlChangeEvent, NoteOnEvent, NoteOffEvent
+import alsaaudio
 
 def midi_translate(event):
 
@@ -36,6 +37,12 @@ def midi_translate(event):
             if int(event.value) < 64:
                 vol = round((1/64) * int(event.value),2)
             return {"buffered": False, "type": "changeTxVolume", "value": vol}
+        
+        # Alsa system audio control
+        if param_no_val == (15, 10):
+            mixer = alsaaudio.Mixer()
+            mixer.setvolume(round(event.value/127 * 100))
+            return {"buffered": False, "type": "NoSDRAction"}
 
         print('Undefined ControlChangeEvent: '+repr(event))
 
@@ -80,4 +87,6 @@ def midi_translate(event):
         if params == (1, 27, 0):
             return {"buffered": False, "type": "muteTxChan"}
 
-    return {"buffered": False, "type": "NotImplemented", "value": "None","options": {}}        
+    return {"buffered": False, "type": "NotImplemented", "value": "None","options": {}}      
+
+
