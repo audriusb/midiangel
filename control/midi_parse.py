@@ -26,7 +26,7 @@ def midi_translate(event):
         if param_no_val == (0, 9):
             vol = 1
             if int(event.value) > 64:
-                vol = round((10/63) * (int(event.value) - 64), 8)
+                vol = round((10/63) * (int(event.value) - 64), 8) + 1
             if int(event.value) < 64:
                 vol = round(1 - (0.9/64) * abs((int(event.value) - 64)),8)
             return {"buffered": False, "type": "changeRxVolume", "value": vol}
