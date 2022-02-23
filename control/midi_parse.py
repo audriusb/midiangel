@@ -37,6 +37,14 @@ def midi_translate(event):
             if int(event.value) < 64:
                 vol = round((1/64) * int(event.value),2)
             return {"buffered": False, "type": "changeTxVolume", "value": vol}
+
+        # Slide all frequencies to scroll waterfall
+        if param_no_val == (15, 8):
+            
+            skew = (event.value - 64) * 10000 # Skew by 10 kHz. Max one direction is 640 kHz
+            return {"buffered": True, "type": "slideFreq", "value": skew }
+
+
         
         # Alsa system audio control
         if param_no_val == (15, 10):

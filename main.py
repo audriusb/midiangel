@@ -40,6 +40,14 @@ def parse_buffered_events(events):
     if freq != 0:
         sdr_controller.change_channel_freq(freq)
 
+    skew_count = 0
+    skew = 0
+    for event in list(filter(lambda event: event['type'] == 'slideFreq' , events)):
+        skew += event['value']
+        skew_count += 1
+    if skew_count != 0:
+        sdr_controller.skew_freq_display(event['value'])
+
 def parse_event(event):
     if event['type'] == 'triggerRxDev':
         sdr_controller.change_device_state('rx')
@@ -60,7 +68,6 @@ def parse_event(event):
         sdr_controller.mute_channel('rx')
     if event['type'] == 'muteTxChan':
         sdr_controller.mute_channel('tx')
-
 
 
 

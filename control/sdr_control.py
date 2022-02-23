@@ -1,4 +1,5 @@
 from collections import defaultdict
+from math import dist
 
 from .midi_control import MIDIControl
 from .sdrangel_api import SDRAngelAPI
@@ -9,6 +10,7 @@ class SDRController:
         self.rx_only = config.getboolean('rx_only')
         self.sdr_client = SDRAngelAPI(config)
         self.midi_client = midi
+        self.current_frequencies = defaultdict(dict)
         self.select_device_sets()
         self.device_states = defaultdict(dict)
         self.check_device_states()
@@ -46,23 +48,28 @@ class SDRController:
         self.check_device_states()
 
     def change_channel_freq(self, step):
-        self.sdr_client.set_ch_freq(step, self.active_rx_device_set, self.active_rx_channel)
+        self.sdr_client.change_ch_freq(step, self.active_rx_device_set, self.active_rx_channel)
+        self.current_frequencies['rx_ch'] = self.sdr_client.get_ch_freq(self.active_rx_device_set, self.active_rx_channel)
         if not self.rx_only:
-            self.sdr_client.set_ch_freq(step, self.active_tx_device_set, self.active_tx_channel)
+            self.sdr_client.change_ch_freq(step, self.active_tx_device_set, self.active_tx_channel)
+            self.current_frequencies['tx_ch'] = self.sdr_client.get_ch_freq(self.active_tx_device_set, self.active_tx_channel)
 
     def select_device_sets(self, rx=0, tx=1):
         self.active_rx_device_set = rx
-        self.active_tx_device_set = tx
+        self.current_frequencies['rx_dev'] = self.sdr_client.get_center_freq(rx)
         if self.rx_only:
             self.midi_client.channel_off('right', 1)
             self.midi_client.channel_off('right', 2)
             self.midi_client.channel_off('right', 3)
             self.midi_client.channel_off('right', 4)
+        else:
+            self.active_tx_device_set = tx
+            self.current_frequencies['tx_dev'] = self.sdr_client.get_center_freq(tx)
 
 
     def select_channel(self, rx=None, tx=None):
         if rx:
-
+            self.current_frequencies['rx_ch'] = self.sdr_client.get_ch_freq(self.active_rx_device_set, rx)
             if not self.sdr_client.check_channel('rx', self.active_rx_device_set, rx ) or int(rx) > 4:
                 self.midi_client.channel_blink(3, 'left', int(rx)+1 )
             else:
@@ -74,6 +81,7 @@ class SDRController:
                     self.sdr_client.get_ch_mute(self.active_rx_device_set, self.active_rx_channel)
                 )
         if tx:
+            self.current_frequencies['rx_ch'] = self.sdr_client.get_ch_freq(self.active_rx_device_set, rx)
             if not self.sdr_client.check_channel('tx', self.active_tx_device_set, tx ) or int(tx) > 4:
                 self.midi_client.channel_blink(3, 'right', int(tx)+1 )
             else:
@@ -89,9 +97,11 @@ class SDRController:
         change = step
         if direction == 'down':
             change = 0 - step
-        self.sdr_client.set_center_freq(change, self.active_rx_device_set)
+        self.sdr_client.change_center_freq(change, self.active_rx_device_set)
+        self.current_frequencies['rx_dev'] = self.sdr_client.get_center_freq(self.active_rx_device_set)
         if not self.rx_only:
-            self.sdr_client.set_center_freq(change, self.active_tx_device_set)
+            self.sdr_client.change_center_freq(change, self.active_tx_device_set)
+            self.current_frequencies['tx_dev'] = self.sdr_client.get_center_freq(self.active_tx_device_set)
 
     def change_channel_volume(self, side, vol):
         if side == 'rx':
@@ -110,3 +120,24 @@ class SDRController:
                 'right',
                 self.sdr_client.set_ch_mute(self.active_tx_device_set, self.active_tx_channel)
             )
+    def skew_freq_display(self, skew):
+
+        initial_freq_ch_rx = self.current_frequencies['rx_ch']
+        initial_freq_dev_rx = self.current_frequencies['rx_dev']
+        if not self.rx_only:
+            initial_freq_ch_tx = self.current_frequencies['tx_ch']
+            initial_freq_dev_tx = self.current_frequencies['tx_dev']
+        if skew < 0:
+            new_ch_freq = initial_freq_ch_rx + abs(skew)
+            new_dev_freq = initial_freq_dev_rx - abs(skew)
+            if not self.rx_only:
+                new_ch_freq = initial_freq_ch_tx + abs(skew)
+                new_dev_freq = initial_freq_dev_tx - abs(skew)
+        else:
+            new_ch_freq = initial_freq_ch_rx - abs(skew)
+            new_dev_freq = initial_freq_dev_rx + abs(skew)
+            if not self.rx_only:
+                new_ch_freq = initial_freq_ch_tx - abs(skew)
+                new_dev_freq = initial_freq_dev_tx + abs(skew)
+        self.sdr_client.set_ch_freq(new_ch_freq, self.active_rx_device_set, self.active_rx_channel)
+        self.sdr_client.set_center_freq(new_dev_freq, self.active_rx_device_set)
