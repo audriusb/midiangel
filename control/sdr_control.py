@@ -19,16 +19,17 @@ class SDRController:
     # For safety reasons update existing state
     def check_device_states(self):
         self.device_states[self.active_rx_device_set] =  self.sdr_client.get_deviceset_state(self.active_rx_device_set)
-        self.device_states[self.active_tx_device_set] =  self.sdr_client.get_deviceset_state(self.active_tx_device_set)
         if self.device_states[self.active_rx_device_set] == 'on':
             self.midi_client.play_on('left')
         elif self.device_states[self.active_rx_device_set] == 'off':
             self.midi_client.play_dimm('left')
-        if self.device_states[self.active_tx_device_set] == 'on' and not self.rx_only:
-            self.midi_client.play_on('right')
-        elif self.device_states[self.active_tx_device_set] == 'off' and not self.rx_only:
-            self.midi_client.play_dimm('right')
-        if self.rx_only:
+        if not self.rx_only:
+            self.device_states[self.active_tx_device_set] =  self.sdr_client.get_deviceset_state(self.active_tx_device_set)
+            if self.device_states[self.active_tx_device_set] == 'on':
+                self.midi_client.play_on('right')
+            elif self.device_states[self.active_tx_device_set] == 'off':
+                self.midi_client.play_dimm('right')
+        else:
             self.midi_client.play_off('right')
 
     def change_device_state(self, side):
@@ -68,6 +69,10 @@ class SDRController:
                 self.active_rx_channel = rx
                 self.midi_client.channel_dim_all('left')
                 self.midi_client.channel_on('left', int(rx)+1 )
+                self.midi_client.mute_change(
+                   'left',
+                    self.sdr_client.get_ch_mute(self.active_rx_device_set, self.active_rx_channel)
+                )
         if tx:
             if not self.sdr_client.check_channel('tx', self.active_tx_device_set, tx ) or int(tx) > 4:
                 self.midi_client.channel_blink(3, 'right', int(tx)+1 )
@@ -75,6 +80,10 @@ class SDRController:
                 self.active_tx_channel = tx
                 self.midi_client.channel_dim_all('right')
                 self.midi_client.channel_on('right', int(rx)+1 )
+                self.midi_client.mute_change(
+                   'right',
+                    self.sdr_client.get_ch_mute(self.active_rx_device_set, self.active_rx_channel)
+                )
 
     def change_center_freq(self, step, direction):
         change = step

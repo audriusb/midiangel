@@ -71,6 +71,14 @@ class SDRAngelAPI:
         }
         result = requests.patch('{}deviceset/{}/channel/{}/settings'.format(self.url, devset, ch), json = data)
 
+    def get_ch_mute(self, devset, ch):
+        settings = requests.get('{}deviceset/{}/channel/{}/settings'.format(self.url, devset, ch)).json()
+        is_mute = settings['{}Settings'.format(settings['channelType'])]['audioMute']
+        if is_mute == 1:
+            return 'on'
+        else:
+            return 'off'
+
     def set_ch_mute(self, devset, ch):
         settings = requests.get('{}deviceset/{}/channel/{}/settings'.format(self.url, devset, ch)).json()
         is_mute = settings['{}Settings'.format(settings['channelType'])]['audioMute']
