@@ -32,7 +32,9 @@ class SDRAngelAPI:
 
     def get_ch_freq(self, devset, ch):
         settings = requests.get('{}deviceset/{}/channel/{}/settings'.format(self.url, devset, ch)).json()
-        return settings['{}Settings'.format(settings['channelType'])]['inputFrequencyOffset']
+        try:
+            return settings['{}Settings'.format(settings['channelType'])]['inputFrequencyOffset']
+        except: return 0
     
     def change_ch_freq(self, step, devset, ch):
         settings = requests.get('{}deviceset/{}/channel/{}/settings'.format(self.url, devset, ch)).json()
@@ -105,19 +107,25 @@ class SDRAngelAPI:
 
     def get_ch_mute(self, devset, ch):
         settings = requests.get('{}deviceset/{}/channel/{}/settings'.format(self.url, devset, ch)).json()
-        is_mute = settings['{}Settings'.format(settings['channelType'])]['audioMute']
-        if is_mute == 1:
-            return 'on'
-        else:
+        try:
+            is_mute = settings['{}Settings'.format(settings['channelType'])]['audioMute']
+            if is_mute == 1:
+                return 'on'
+            else:
+                return 'off'
+        except: 
             return 'off'
 
     def set_ch_mute(self, devset, ch):
         settings = requests.get('{}deviceset/{}/channel/{}/settings'.format(self.url, devset, ch)).json()
-        is_mute = settings['{}Settings'.format(settings['channelType'])]['audioMute']
-        if is_mute == 0:
-            next_state = 1
-        else:
-            next_state = 0
+        try:
+            is_mute = settings['{}Settings'.format(settings['channelType'])]['audioMute']
+            if is_mute == 0:
+                next_state = 1
+            else:
+                next_state = 0
+        except:
+            return 'off'
         data = {
             'channelType': settings['channelType'],
             'direction': settings['direction'],
