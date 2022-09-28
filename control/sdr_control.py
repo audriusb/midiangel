@@ -6,7 +6,7 @@ from .sdrangel_api import SDRAngelAPI
 
 class SDRController:
     
-    def __init__(self, config, midi):
+    def __init__(self, config, midi, rig):
         self.rx_only = config.getboolean('rx_only')
         self.sdr_client = SDRAngelAPI(config)
         self.midi_client = midi
@@ -15,6 +15,7 @@ class SDRController:
         self.device_states = defaultdict(dict)
         self.check_device_states()
         self.select_channel(rx='0')
+        self.rig = rig
         if not self.rx_only:
             self.select_channel(tx='0')
 
@@ -48,8 +49,11 @@ class SDRController:
         self.check_device_states()
 
     def change_channel_freq(self, step):
+        if self.sdr_client.get_center_freq(self.active_rx_device_set) > 100000000:
+          step *= 10
         self.sdr_client.change_ch_freq(step, self.active_rx_device_set, self.active_rx_channel)
         self.current_frequencies['rx_ch'] = self.sdr_client.get_ch_freq(self.active_rx_device_set, self.active_rx_channel)
+        self.rig.change_freq(step)
         if not self.rx_only:
             self.sdr_client.change_ch_freq(step, self.active_tx_device_set, self.active_tx_channel)
             self.current_frequencies['tx_ch'] = self.sdr_client.get_ch_freq(self.active_tx_device_set, self.active_tx_channel)
@@ -81,7 +85,7 @@ class SDRController:
                     self.sdr_client.get_ch_mute(self.active_rx_device_set, self.active_rx_channel)
                 )
         if tx:
-            self.current_frequencies['rx_ch'] = self.sdr_client.get_ch_freq(self.active_rx_device_set, rx)
+            self.current_frequencies['tx_ch'] = self.sdr_client.get_ch_freq(self.active_rx_device_set, tx)
             if not self.sdr_client.check_channel('tx', self.active_tx_device_set, tx ) or int(tx) > 4:
                 self.midi_client.channel_blink(3, 'right', int(tx)+1 )
             else:

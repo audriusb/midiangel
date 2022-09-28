@@ -4,6 +4,7 @@ import json
 class SDRAngelAPI:
     def __init__(self, config):
         self.url = '{}://{}:{}/{}'.format(config['scheme'], config['hostname'], config['port'], config['path'])
+        self.config = config
 
     def get_deviceset_state(self, devset):
         state = requests.get('{}deviceset/{}/device/run'.format(self.url, devset)).json()['state']
@@ -31,12 +32,14 @@ class SDRAngelAPI:
             return False
 
     def get_ch_freq(self, devset, ch):
+        print('{}deviceset/{}/channel/{}/settings'.format(self.url, devset, ch))
         settings = requests.get('{}deviceset/{}/channel/{}/settings'.format(self.url, devset, ch)).json()
         try:
             return settings['{}Settings'.format(settings['channelType'])]['inputFrequencyOffset']
         except: return 0
     
     def change_ch_freq(self, step, devset, ch):
+
         settings = requests.get('{}deviceset/{}/channel/{}/settings'.format(self.url, devset, ch)).json()
         current_freq = settings['{}Settings'.format(settings['channelType'])]['inputFrequencyOffset']
         data = {
@@ -61,12 +64,22 @@ class SDRAngelAPI:
 
     def get_center_freq(self, devset):
         settings = requests.get('{}deviceset/{}/device/settings'.format(self.url, devset)).json()
-        settings_name = {k.lower(): k for k in settings.keys()}['{}Settings'.format(settings['deviceHwType']).lower()]
+        settings_name = [k for k in settings.keys() if k.lower().startswith(settings['deviceHwType'].lower())][0]
+        if settings_name == "remoteInputSettings":
+            url = '{}://{}:{}/{}'.format(self.config['scheme'], settings[settings_name]['apiAddress'], settings[settings_name]['apiPort'], self.config['path'])
+            settings = requests.get('{}deviceset/{}/device/settings'.format(url, devset)).json()
+            settings_name = [k for k in settings.keys() if k.lower().startswith(settings['deviceHwType'].lower())][0]
         return settings[settings_name]['centerFrequency']
 
     def change_center_freq(self, step, devset):
         settings = requests.get('{}deviceset/{}/device/settings'.format(self.url, devset)).json()
-        settings_name = {k.lower(): k for k in settings.keys()}['{}Settings'.format(settings['deviceHwType']).lower()]
+        settings_name = [k for k in settings.keys() if k.lower().startswith(settings['deviceHwType'].lower())][0]
+        if settings_name == "remoteInputSettings":
+            url = '{}://{}:{}/{}'.format(self.config['scheme'], settings[settings_name]['apiAddress'], settings[settings_name]['apiPort'], self.config['path'])
+            settings = requests.get('{}deviceset/{}/device/settings'.format(url, devset)).json()
+            settings_name = [k for k in settings.keys() if k.lower().startswith(settings['deviceHwType'].lower())][0]
+        else:
+            url = self.url
         current_freq = settings[settings_name]['centerFrequency']
         data = {
             'deviceHwType': settings['deviceHwType'],
@@ -75,11 +88,17 @@ class SDRAngelAPI:
                 'centerFrequency': current_freq + step 
                 }
         }
-        result = requests.patch('{}deviceset/{}/device/settings'.format(self.url, devset), json = data)
+        result = requests.patch('{}deviceset/{}/device/settings'.format(url, devset), json = data)
 
     def set_center_freq(self, freq, devset):
         settings = requests.get('{}deviceset/{}/device/settings'.format(self.url, devset)).json()
-        settings_name = {k.lower(): k for k in settings.keys()}['{}Settings'.format(settings['deviceHwType']).lower()]
+        settings_name = [k for k in settings.keys() if k.lower().startswith(settings['deviceHwType'].lower())][0]
+        if settings_name == "remoteInputSettings":
+            url = '{}://{}:{}/{}'.format(self.config['scheme'], settings[settings_name]['apiAddress'], settings[settings_name]['apiPort'], self.config['path'])
+            settings = requests.get('{}deviceset/{}/device/settings'.format(url, devset)).json()
+            settings_name = [k for k in settings.keys() if k.lower().startswith(settings['deviceHwType'].lower())][0]
+        else:
+            url = self.url
         data = {
             'deviceHwType': settings['deviceHwType'],
             'direction': settings['direction'],
@@ -87,7 +106,7 @@ class SDRAngelAPI:
                 'centerFrequency': freq
                 }
         }
-        result = requests.patch('{}deviceset/{}/device/settings'.format(self.url, devset), json = data)
+        result = requests.patch('{}deviceset/{}/device/settings'.format(url, devset), json = data)
 
 
     def set_ch_vol(self, vol, devset, ch):

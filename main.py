@@ -2,7 +2,7 @@ import datetime
 import configparser
 import signal, sys
 
-from control import SDRController, MIDIControl, midi_translate
+from control import SDRController, MIDIControl, midi_translate, RigControl
 
 from threading import Thread
 from queue import Queue
@@ -18,13 +18,18 @@ last_event_flush_t = datetime.datetime.now()
 last_event_flush_count = 0
 event_api_buff = Queue()
 
+rig = RigControl(config['rigctl'])
+
 midi = MIDIControl(config['MidiController']['controller_name'])
+
 sdr_controller = SDRController(
         config['sdrangel'],
-        midi
+        midi,
+        rig
     )
 
 def freq_step(speed='slow', direction='up'):
+    # Will be multiplied in sdrcontroller by 10 if center freq is above 100Mhz
     step = 10
     if speed == 'fast':
         step = 100
@@ -100,6 +105,7 @@ def flush_events(th_name, event_api_buff, last_event_flush_t, last_event_flush_c
 def signal_handler(signal, frame):
     print('Exiting...')
     midi.reset_all()
+    rig.close()
     print('Bye')
     sys.exit()
 
