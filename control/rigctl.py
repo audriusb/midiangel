@@ -5,10 +5,11 @@ class RigControl:
     def __init__(self, config):
         self.enabled = config['enabled']
         if self.enabled:
+            Hamlib.rig_set_debug(Hamlib.RIG_DEBUG_NONE)
             self.rig = Hamlib.Rig(Hamlib.__dict__[config['model_number']])
             self.rig.set_conf("rig_pathname", config['device'])
             self.rig.set_conf('serial_speed', config['baud_rate'])
-            self.rig.set_conf("retry", "5")
+            self.rig.set_conf("retry", "10")
             self.rig.open()
 
     def set_freq(self, freq):

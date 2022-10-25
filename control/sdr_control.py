@@ -15,9 +15,11 @@ class SDRController:
         self.device_states = defaultdict(dict)
         self.check_device_states()
         self.select_channel(rx='0')
-        self.rig = rig
         if not self.rx_only:
             self.select_channel(tx='0')
+        self.rig = rig
+        if self.rig.enabled:
+           self.rig.set_freq(self.current_frequencies['rx_ch']+self.current_frequencies['rx_dev'])
 
     # For safety reasons update existing state
     def check_device_states(self):
